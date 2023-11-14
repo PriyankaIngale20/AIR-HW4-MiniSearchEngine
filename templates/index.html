@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-    <img src="{{ user_image }}">
+    <title>AIR-MiniSearchEngine</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}">
+</head>
+<body>
+    <img src="{{ user_image }}" id="searchicon">
     <br>
     <form action="search" method="post">
         <br>
-        <input type="text" name="query">
-        <input type="submit" value="SEARCH" id="search">
-        <p> {{content}}</p>
+        <input type="text" name="query" id="seach_input" placeholder="Input your query..">
+        <input type="submit" value="SEARCH" id="search_btn">
+        <br>
+        <a href="{{content}}"> {{content}}</a>
     </form>
-</head>
-<body>
-
 </body>
 </html>
