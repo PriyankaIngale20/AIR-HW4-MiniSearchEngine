@@ -13,7 +13,11 @@
         <input type="text" name="query" id="seach_input" placeholder="Input your query..">
         <input type="submit" value="SEARCH" id="search_btn">
         <br>
-        <a href="{{content}}"> {{content}}</a>
+        <p>{{ search_result_text }}</p>
+        {% for item in content %}
+        <a href="{{ url_for('static', filename='files/' + item) }}" target="_blank">{{ item }}</a><br><br>
+        {% endfor %}
+
     </form>
 </body>
 </html>
