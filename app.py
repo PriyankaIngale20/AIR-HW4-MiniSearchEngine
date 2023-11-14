@@ -69,7 +69,7 @@ def search():
     search_results = search_engine.read_data_from_files(tokens, directory_path)
 
     # Returning the search results as JSON
-    return render_template("index.html", content = search_results) 
+    return render_template("index.html", content = search_results,user_image = image_path) 
 
 
 class retrieve(object):
