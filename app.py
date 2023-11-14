@@ -58,8 +58,11 @@ def search():
                 tokens.append(wordKey)  # You may decide how to handle unknown tokens
     else:
         print("in Else - Single word query")
-        m.lexer.input(query_words)
+        print(f"{query_words[0] = }")
+        m.lexer.input(query_words[0])
+        print("working")
         tok = m.lexer.token()
+        print("working")
         if tok:
             tokens.append(tok.value)
         else:
@@ -69,7 +72,7 @@ def search():
     search_results = search_engine.read_data_from_files(tokens, directory_path)
 
     # Returning the search results as JSON
-    return render_template("index.html", content = search_results) 
+    return render_template("index.html", content = search_results, user_image = image_path)
 
 
 class retrieve(object):

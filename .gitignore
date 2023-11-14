@@ -3,3 +3,6 @@
 templates/.DS_Store
 templates/.DS_Store
 .DS_Store
+__pycache__/app.cpython-311.pyc
+__pycache__/HashTable.cpython-311.pyc
+__pycache__/HTMLLexer.cpython-311.pyc
