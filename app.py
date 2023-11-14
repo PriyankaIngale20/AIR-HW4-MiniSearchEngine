@@ -47,6 +47,7 @@ def search():
     m.lexx()
     m.build()
     tokens = []
+    query_string = ""
     if len(query_words)>1:
         for wordKey in query_words:
             print(f"in for loop {wordKey = }")
@@ -54,15 +55,17 @@ def search():
             tok = m.lexer.token()
             if tok:
                 tokens.append(tok.value)
+                query_string = query_string + tok.value + " "
             else:
                 tokens.append(wordKey)  # You may decide how to handle unknown tokens
     else:
-        print("in Else - Single word query")
-        print(f"{query_words[0] = }")
+        query_string = query_words[0]
+        #print("in Else - Single word query")
+        #print(f"{query_words[0] = }")
         m.lexer.input(query_words[0])
-        print("working")
+        #print("working")
         tok = m.lexer.token()
-        print("working")
+        #print("working")
         if tok:
             tokens.append(tok.value)
         else:
@@ -70,9 +73,11 @@ def search():
 
     # Assuming that read_data_from_files will return the search results instead of printing them
     search_results = search_engine.read_data_from_files(tokens, directory_path)
-
+    print(f" result is = {search_results =} ")
+    if search_results:
+        result_text = f"Your result for query \"{query_string}\" is"
     # Returning the search results as JSON
-    return render_template("index.html", content = search_results, user_image = image_path)
+    return render_template("index.html", content = search_results, user_image = image_path, search_result_text = result_text)
 
 
 class retrieve(object):
@@ -191,7 +196,8 @@ class retrieve(object):
                 print("Top postings entries are: \n", postings_list, "\n")
                 for w, wt in postings_list:
                     x = self.readFileLine(int(w), self.map_recordSize, f3)
-                    retrieved.append(x)
+                    print(f"one post from postings_list is {x[0]}")
+                    retrieved.append(x[0])
                 next_posts = postings_list
                 postings_list = []
         return retrieved
@@ -216,11 +222,11 @@ class retrieve(object):
             retrieved = retrieved[:10]
             return retrieved
             #print(f"Top 10 Documents that has word {query_words} are: ")
-            #print(retrieved, "\n")
+            print(retrieved, "\n")
         else:
             return retrieved
             #print(f"Documents that has word {query_words} are: ")
-            #print(retrieved, "\n")
+            print(retrieved, "\n")
 
     # read line from linenumber
     def readFileLine(self, dict_line_no, recordsize, fn):
