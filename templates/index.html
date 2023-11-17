@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AIR-MiniSearchEngine</title>
+    <title>Lil' Find Engine</title>
     <link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}">
 </head>
 <body>
+    <!-- <button onclick="onReset()">Reset</button> -->
     <img src="{{ user_image }}" id="searchicon">
     <br>
     <form action="search" method="post">
@@ -13,11 +14,16 @@
         <input type="text" name="query" id="seach_input" placeholder="Input your query..">
         <input type="submit" value="SEARCH" id="search_btn">
         <br>
+        <p>Please select your search type: </p>
+        <input type="radio" id="word_based" name="search_type" value="word_based" checked>
+        <label for="word_based">Word based search </label>
+        <input type="radio" id="phrase_based" name="search_type" value="phrase_based">
+        <label for="phrase_based">Phrase based search</label>
+        <br>
         <p>{{ search_result_text }}</p>
         {% for item in content %}
         <a href="{{ url_for('static', filename='files/' + item) }}" target="_blank">{{ item }}</a><br><br>
         {% endfor %}
-
     </form>
 </body>
 </html>

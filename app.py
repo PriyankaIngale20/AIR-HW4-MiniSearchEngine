@@ -16,6 +16,9 @@ app = Flask(__name__)
 image_path = os.path.join('static', 'LilFindEngine.png')
 logging.basicConfig(level=logging.DEBUG)
 
+word_based_search_btn_enabled = True
+phrase_based_search_btn_enabled = False
+radio_btn_checked = []
 
 @app.route('/')
 def root():
@@ -28,10 +31,13 @@ def root():
 def search():
     print("post called")
     query_words = []
+    search_type = ''
     if request.method == 'POST':
         query_words = request.form['query']
+        search_type = request.form['search_type']
         query_words = query_words.split()
         print(f"{query_words = }")
+        print(f"{search_type = }")
         app.logger.debug(f"some_variable data: {query_words}")
     else:
         print("Else called")
@@ -76,8 +82,11 @@ def search():
     print(f" result is = {search_results =} ")
     if search_results:
         result_text = f"Your result for query \"{query_string}\" is"
+
+    # radio_btn_checked = {'word_based': 'word_based' == search_type, 'phrase_based': 'phrase_based' == search_type}
+    
     # Returning the search results as JSON
-    return render_template("index.html", content = search_results, user_image = image_path, search_result_text = result_text)
+    return render_template("index.html", content = search_results, user_image = image_path, search_result_text = result_text) 
 
 
 class retrieve(object):
