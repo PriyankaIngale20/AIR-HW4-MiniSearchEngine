@@ -177,6 +177,7 @@ class HTMLLexer(object):
                 value.append(1)
                 value.append([docID, float('{:.3f}'.format(freq[key]/sum_log))])
                 p = self.globalHash_table.insert(key, value)
+                print(f"{value = }")
                 value = []
             else:
                 # increment document count if key already exist
@@ -185,6 +186,30 @@ class HTMLLexer(object):
                     value = self.globalHash_table.get(key)
                     value[0] += 1
                     value.append([docID, float('{:.3f}'.format(freq[key]/sum_log))])
+                    self.globalHash_table.insert(key, value)
+                    print(f"{value = }")
+                    value = []
+                else :
+                    print("Collision!")
+
+
+    def updateFrequency_3(self, freq2, docID, sum_log):
+        value = []
+        for key in freq2:
+            if self.globalHash_table.get(key) is None:
+                # initialize document count to one for new key
+                value.append(1)
+                value.append([docID, float('{:.3f}'.format(freq2[key][0]/sum_log)), freq2[key][1], freq2[key][2]])
+                p = self.globalHash_table.insert(key, value)
+                #print(f"{value = }")
+                value = []
+            else:
+                # increment document count if key already exist
+                if self.globalHash_table.check_key(key) == key:
+                    #print("Not Collision!")
+                    value = self.globalHash_table.get(key)
+                    value[0] += 1
+                    value.append([docID, float('{:.3f}'.format(freq2[key][0]/sum_log)), freq2[key][1], freq2[key][2]])
                     self.globalHash_table.insert(key, value)
                     value = []
                 else :
@@ -216,6 +241,16 @@ class HTMLLexer(object):
             else:
                 freq[x] = 1
 
+        freq2 ={}
+        for i, x in enumerate(tokens):
+            if x in freq2:
+                freq2[x][0] += 1.0  # Increment the count for RTF
+                freq2[x][1] += 1  # Increment the count for freq
+                freq2[x][2].append(i)  # Append the new index
+            else:
+                freq2[x] = [1.0, 1, [i]]  # Initialize with count 1 and a list containing the index
+        #print(f" before rtf calculation : {freq2 = }")
+
 
         # Calculate rtf for socument HT
         val = 0.0
@@ -226,34 +261,59 @@ class HTMLLexer(object):
             sum_log += val
             freq[k] = val
 
+
+        # Calculate rtf for socument HT
+        val2 = 0.0
+        sum_log2 = 0.0
+        for k2, v2 in freq2.items():
+            val = 1+math.log10(v2[0])
+            val = float('{:.3f}'.format(val))
+            sum_log += val
+            freq2[k2][0] = val
+
+        #print(f" After rtf calculation : {freq2 = }")
+
         # update the global count of token frequencies
         self.updateFrequency(freq, docID, sum_log)
-        self.updateFrequency_2(freq, docID, sum_log)
+        #self.updateFrequency_2(freq, docID, sum_log)
+        self.updateFrequency_3(freq2, docID, sum_log)
+
+
 
     # create the files with tokens in an order with hash table
     def finish2(self, N):
-        with open("output/dict.txt", "w") as f1, open("output/post.txt", "w") as f2:
+        with open("output/dict.txt", "w") as f1, open("output/post.txt", "w") as f2, open("output/loc.txt", "w") as f3:
             count = 0
-            start = 0
+            start_d = 0
+            start_p = 0
             line = 0
             whitespace = str(" ")
             data = []
             print("Total tokens", self.total_tok)
+            # for i in range(self.globalHash_table.ht_size()):
+            #     if self.globalHash_table._data(i) is not None:
+            #         print("Printing global hash table")
+            #         print(f"index is {i} and data is {self.globalHash_table._data(i)}")
+
             #print("Hash Value for token 7634134 is ", self.globalHash_table._hash(str(7634134)), self.globalHash_table.get(str(7634134)))
             for i in range(self.globalHash_table.ht_size()):
                 if self.globalHash_table._data(i) is not None:
                     line+=1
                     count += 1
                     data = self.globalHash_table._data(i)
-                    word = data[0]
+                    #word = data[0]
                     postings = data[1][1:]
+                    #print(f"postings : {data[1][1:] = }")
                     if len(postings) > 0:
-                        f1.write("%-38s %-4s %-6s\n" % (data[0], data[1][0], start))
-                        start = start + data[1][0]
+                        f1.write("%-38s %-4s %-6s\n" % (data[0], data[1][0], start_d))
+                        start_d = start_d + data[1][0]
                         idf = 1+math.log10(N/data[1][0])
                         idf = float('{:.3f}'.format(idf))
                         for i in postings:
-                            f2.write("%-5s %-6s\n" %(i[0], float('{:.3f}'.format(i[1]*idf))))
+                            f2.write("%-5s %-6s %-3s %-7s\n" %(i[0], float('{:.3f}'.format(i[1]*idf)), i[2], start_p))
+                            start_p = start_p + i[2]
+                            for j in i[3]:
+                                f3.write("%-4s\n" %j)
                 else:
                     line+=1
                     if line != self.globalHash_table.ht_size():

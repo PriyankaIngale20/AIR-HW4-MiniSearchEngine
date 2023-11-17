@@ -6,12 +6,13 @@ import psutil
 from ply import lex
 import os
 from HTMLLexer import HTMLLexer
-from flask import Flask, request, jsonify, render_template
-#from HashTable import HashTable
-#from nltk.stem import PorterStemmer
+from flask import Flask, request, jsonify, render_template, flash
+# from HashTable import HashTable
+# from nltk.stem import PorterStemmer
 import logging
 
 app = Flask(__name__)
+app.secret_key = "asdfghyj_12334456"
 
 image_path = os.path.join('static', 'LilFindEngine.png')
 logging.basicConfig(level=logging.DEBUG)
@@ -21,63 +22,66 @@ logging.basicConfig(level=logging.DEBUG)
 def root():
     print("this is for test")
     app.logger.debug(f"this is for test")
-    return render_template("index.html", user_image = image_path)   
+    flash(
+        "Prepend your query with 'word' or 'phrase' for word based or phrase based search respectively, e.g. 'word cat' or 'phrase memory card'")
+    return render_template("index.html", user_image=image_path, search_result_text="")
 
 
 @app.route('/search', methods=['POST'])
 def search():
-    print("post called")
+    # print("post called")
     query_words = []
+    search_results = []
+    query = ""
+    result_text = ""
     if request.method == 'POST':
-        query_words = request.form['query']
-        query_words = query_words.split()
-        print(f"{query_words = }")
-        app.logger.debug(f"some_variable data: {query_words}")
-    else:
-        print("Else called")
-
-    directory_path = "./output"
+        query = request.form['query']
+        query_words = query.split()
 
     if not query_words:
-        return jsonify({"error": "Both 'query' and 'directory' fields are required."}), 400
+        flash("Error: query field is required")
+        # return jsonify({"error": "'query' field is required."}), 400
+    else:
+        q_type = query_words[0]
+        print(q_type)
 
-    search_engine = retrieve()
+        if (q_type == 'word') or (q_type == 'phrase'):
+            query_words = query_words[1:]
+            directory_path = "./output"
+            # Assuming that read_data_from_files will return the search results instead of printing them
+            query_string, search_results = process_query_words(q_type, query_words, directory_path)
+            print(f" result is = {search_results =} ")
+            if search_results:
+                result_text = f"Your result for query \"{query}\" is"
+            else:
+                result_text = f" No result found for query \"{query}\""
+                print(f" No result found ")
+            #return render_template("index.html", user_image=image_path, search_result_text="")
+        else:
+            flash("Error: Incorrect prepend")
+    # Returning the search results as JSON
+    return render_template("index.html", content=search_results, user_image=image_path, search_result_text=result_text)
 
+
+def process_query_words(q_type, query_words, directory_path):
+    # Initialize HTML lexer and search engine
     m = HTMLLexer()
     m.lexx()
     m.build()
+    search_engine = retrieve()
+    # Tokenize and process query string
     tokens = []
     query_string = ""
-    if len(query_words)>1:
-        for wordKey in query_words:
-            print(f"in for loop {wordKey = }")
-            m.lexer.input(wordKey)
-            tok = m.lexer.token()
-            if tok:
-                tokens.append(tok.value)
-                query_string = query_string + tok.value + " "
-            else:
-                tokens.append(wordKey)  # You may decide how to handle unknown tokens
-    else:
-        query_string = query_words[0]
-        #print("in Else - Single word query")
-        #print(f"{query_words[0] = }")
-        m.lexer.input(query_words[0])
-        #print("working")
+    for wordKey in query_words:
+        m.lexer.input(wordKey)
         tok = m.lexer.token()
-        #print("working")
-        if tok:
+        if tok:  # Handle valid tokens
             tokens.append(tok.value)
+            query_string += tok.value + " "
+        # Handle unknown tokens
         else:
-            tokens.append(query_words)  # You may decide how to handle unknown tokens
-
-    # Assuming that read_data_from_files will return the search results instead of printing them
-    search_results = search_engine.read_data_from_files(tokens, directory_path)
-    print(f" result is = {search_results =} ")
-    if search_results:
-        result_text = f"Your result for query \"{query_string}\" is"
-    # Returning the search results as JSON
-    return render_template("index.html", content = search_results, user_image = image_path, search_result_text = result_text)
+            tokens.append(wordKey)
+    return query_string, search_engine.read_data_from_files(q_type, tokens, directory_path)
 
 
 class retrieve(object):
@@ -88,21 +92,26 @@ class retrieve(object):
         self.file_size_dict = 0
         self.file_size_post = 0
         self.file_size_map = 0
+        self.file_size_loc = 0
         self.dict_length = 0
         self.post_length = 0
         self.map_length = 0
+        self.loc_length = 0
         self.dict_recordSize = 51
-        self.post_recordSize = 13
-        self.map_recordSize = 11
+        self.post_recordSize = 25
+        self.map_recordSize = 17
+        self.loc_recordSize = 6
 
-    def get_file_len(self, f1, f2, f3):
+    def get_file_len(self, f1, f2, f3, f4):
         self.file_size_dict = os.path.getsize(f1)
         self.file_size_post = os.path.getsize(f2)
         self.file_size_map = os.path.getsize(f3)
+        self.file_size_loc = os.path.getsize(f4)
         dict_length = int(self.file_size_dict / self.dict_recordSize)  # 51 is record length of dictionary file
-        post_length = int(self.file_size_post / self.post_recordSize)  # 25 is record length of dictionary file
-        map_length = int(self.file_size_map / self.map_recordSize)  # 17 is record length of dictionary file
-        return dict_length, post_length, map_length
+        post_length = int(self.file_size_post / self.post_recordSize)  # 25 is record length of postings file
+        map_length = int(self.file_size_map / self.map_recordSize)  # 17 is record length of map file
+        loc_length = int(self.file_size_loc / self.loc_recordSize)  # 7 is record length of location file
+        return dict_length, post_length, map_length, loc_length
 
     def dict_hash(self, key, size, f1):
         # Compute the initial hash value
@@ -133,7 +142,7 @@ class retrieve(object):
         f1.seek(0)
         return hash_val
 
-    def combineResult(self, postList, nextPost):
+    def wordResult(self, postList, nextPost):
         finalPosts = []
         # Create dictionaries from the lists for easy lookup
         nextPosts_dict = {item[0]: item[1] for item in nextPost}
@@ -147,6 +156,27 @@ class retrieve(object):
                 finalPosts.append([key, '{:.3f}'.format(float(postList_dict[key]))])
         return finalPosts
 
+    def phraseResult(self, f4, postList, nextPost):
+        finalPosts = []
+        nextPosts_dict2 = {item[0]: [item[1], item[2], item[3]] for item in nextPost}
+        postList_dict2 = {item[0]: [item[1], item[2], item[3]] for item in postList}
+        index1 = []
+        index2 = []
+        for key in set(nextPosts_dict2.keys()).union(postList_dict2.keys()):
+            if key in nextPosts_dict2 and key in postList_dict2:  # for same document ID
+                for i in range(int(postList_dict2[key][1])):
+                    index = self.readFileLine(int(postList_dict2[key][2]) + i, self.loc_recordSize, f4)
+                    index1.append(int(index[0]))
+                for i in range(int(nextPosts_dict2[key][1])):
+                    index = self.readFileLine(int(nextPosts_dict2[key][2]) + i, self.loc_recordSize, f4)
+                    index2.append(int(index[0]))
+                for value1 in index1:
+                    if value1 + 1 in index2:
+                        finalPosts.append(
+                            [key, '{:.3f}'.format(float(nextPosts_dict2[key][0]) + float(postList_dict2[key][0]))])
+            #print(f"{finalPosts[:10] = }")
+        return finalPosts
+
     def verify_directory(self, directory_path):
         if not os.path.exists(directory_path) or not os.path.isdir(directory_path):
             print("Directory does not exist or is not a directory.")
@@ -154,7 +184,7 @@ class retrieve(object):
         return True
 
     def get_file_paths(self, directory_path):
-        files_to_read = ["dict.txt", "post.txt", "map.txt"]
+        files_to_read = ["dict.txt", "post.txt", "map.txt", "loc.txt"]
         file_paths = [os.path.join(directory_path, filename) for filename in files_to_read]
         for file_path in file_paths:
             if not os.path.exists(file_path):
@@ -164,69 +194,80 @@ class retrieve(object):
 
     def read_dictionary(self, f1, word):
         dict_line_no = self.dict_hash(word, self.dict_length, f1)  # Calculate hash value
-        #print(f"Hash value of token {word} is {int(dict_line_no)}\n")
+        # print(f"Hash value of token {word} is {int(dict_line_no)}\n")
         if dict_line_no > self.dict_length:
             print("Token does not exist in collection! Enter new Token\n")
             return None
-        #offset = dict_line_no * self.dict_recordSize
+        # offset = dict_line_no * self.dict_recordSize
         return self.readFileLine(dict_line_no, self.dict_recordSize, f1)
 
-
-    def process_postings(self, f2, f3, docCount, docStart):
+    def process_postings(self, f2, f3, f4, docCount, docStart):
         postings_list = []
         for i in range(docCount):
             posting = self.readFileLine((docStart + i), self.post_recordSize, f2)
             postings_list.append(posting)
         return postings_list
 
-
-    def retrive_postings(self, query_words, f1, f2, f3):
+    def retrive_postings(self, q_type, query_words, f1, f2, f3, f4):
         retrieved = []
         next_posts = []
+
         for word in query_words:
             dict_entry = self.read_dictionary(f1, word)
             if dict_entry and (dict_entry[0] == word):
+                print(f"dic entry: {dict_entry}")
                 docCount, docStart = int(dict_entry[1]), int(dict_entry[2])
-                postings_list = self.process_postings(f2, f3, docCount, docStart)
-                postings_list = sorted(postings_list, key=lambda x: x[1], reverse=True)  # Sort for high to low tf*idf weights
-                if next_posts:
-                    postings_list = self.combineResult(next_posts, postings_list)
-                if len(postings_list) > 11:
-                    postings_list = postings_list[:10]  # Print the top 10 elements
-                print("Top postings entries are: \n", postings_list, "\n")
-                for w, wt in postings_list:
-                    x = self.readFileLine(int(w), self.map_recordSize, f3)
-                    print(f"one post from postings_list is {x[0]}")
-                    retrieved.append(x[0])
+                postings_list = self.process_postings(f2, f3, f4, docCount, docStart)
+                postings_list = sorted(postings_list, key=lambda x: x[1],
+                                       reverse=True)  # Sort for high to low tf*idf weights
+                if next_posts and len(query_words) > 1:
+                    # Word Search
+                    if q_type== 'word':
+                        postings_list = self.wordResult(next_posts, postings_list)
+                        postings_list = sorted(postings_list, key=lambda x: x[1], reverse=True)
+                        # print(f"After considering 2nd word {postings_list = } \n")
+                    elif q_type== 'phrase':
+                        # Phrase Search
+                        postings_list = self.phraseResult(f4, next_posts, postings_list)
+                        postings_list = sorted(postings_list, key=lambda x: x[1], reverse=True)
+                        # print(f"After considering 2nd word {postings_list_phrase = } \n")
+                    else:
+                        return retrieved
+                else:
+                    postings_list = postings_list[:10]
+
                 next_posts = postings_list
-                postings_list = []
+
+        for posting in postings_list:
+            w, wt, *_ = posting[:2]
+            # print(f"{w= }")
+            x = self.readFileLine(int(w), self.map_recordSize, f3)
+            # print(f"one post from postings_list is {x}")
+            if x[0] not in retrieved:
+                retrieved.append(x[0])
         return retrieved
 
-
-    def read_data_from_files(self, query_words, directory_path):
+    def read_data_from_files(self, q_type, query_words, directory_path):
         # Verify that the directory exists
         flag = self.verify_directory(directory_path)
         file_path = self.get_file_paths(directory_path)
         print(f"{file_path = }")
         if flag and file_path:
-            with open(file_path[0], "r") as f1, open(file_path[1], "r") as f2, open(file_path[2], "r") as f3:
-                self.dict_length, self.post_length, self.map_length = self.get_file_len(file_path[0], file_path[1],
-                                                                                        file_path[2])
-                retrieved = self.retrive_postings(query_words, f1, f2, f3)
+            with open(file_path[0], "r") as f1, open(file_path[1], "r") as f2, open(file_path[2], "r") as f3, open(
+                    file_path[3], "r") as f4:
+                self.dict_length, self.post_length, self.map_length, self.loc_length = self.get_file_len(file_path[0],
+                                                                                                         file_path[1],
+                                                                                                         file_path[2],
+                                                                                                         file_path[3])
+                retrieved = self.retrive_postings(q_type, query_words, f1, f2, f3, f4)
                 return self.formatData(retrieved, query_words)
-
-
 
     def formatData(self, retrieved, query_words):
         if len(retrieved) > 11:
             retrieved = retrieved[:10]
             return retrieved
-            #print(f"Top 10 Documents that has word {query_words} are: ")
-            print(retrieved, "\n")
         else:
             return retrieved
-            #print(f"Documents that has word {query_words} are: ")
-            print(retrieved, "\n")
 
     # read line from linenumber
     def readFileLine(self, dict_line_no, recordsize, fn):
@@ -237,49 +278,9 @@ class retrieve(object):
         fn.seek(0)
         return x.split()
 
-    def main(self):
-        # Parse command line arguments
-        # for elapsed time
-        elapsed_time = []
-        start = time.time()
-        # for cpu time
-        p = psutil.Process()
-        cpu_time = []
-        cpu_time.append(0.00)
-        # Serve pages
-        port = 8987
-        delay_open_url(f'http://localhost:{port}/game.html', .1)
-
-        parser = argparse.ArgumentParser(description="Read data from a specified directory")
-        parser.add_argument("-q", nargs="+", help="Query words")
-        parser.add_argument("-d", help="Directory path")
-        args = parser.parse_args()
-        if args.q is None or args.d is None:  # Check if both -q and -d options are provided
-            parser.error("Both -q and -d options are required.")
-        query_words = args.q  # Get the query words and directory path
-        directory_path = args.d
-        # Create an instance of the HTMLLexer class and use it
-        m = HTMLLexer()
-        m.lexx()
-        m.build()
-        tokens = []
-        # parse the  all tokens from lexer
-        for wordKey in query_words:
-            m.lexer.input(wordKey)
-            tok = m.lexer.token()
-            if tok:
-                tokens.append(tok.value)
-                print(f"Entered token is: {tok.value}")
-            else:
-                print(f"Unknown or incorrect token entered! Try new Token")
-
-        self.read_data_from_files(tokens, directory_path)  # Read files from the specified directory
-        finish = time.time()
-        print(f"Total time taken to process query is {'{:.6f}'.format(finish - start)} seconds")
-
 
 if __name__ == "__main__":
     app.run(debug=True)
     print("Started")
-    #rt = retrieve()
-    #rt.main()  # Start execution
+    # rt = retrieve()
+    # rt.main()  # Start execution
