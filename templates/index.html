@@ -10,13 +10,21 @@
     <br>
     <form action="search" method="post">
         <br>
-        <input type="text" name="query" id="seach_input" placeholder="Input your query..">
+        <input type="text" name="query" id="search_input" placeholder="Input your query..">
         <input type="submit" value="SEARCH" id="search_btn">
         <br>
         <p>{{ search_result_text }}</p>
-        {% for item in content %}
-        <a href="{{ url_for('static', filename='files/' + item) }}" target="_blank">{{ item }}</a><br><br>
-        {% endfor %}
+            {% if content %}
+                {% for item in content %}
+                <a href="{{ url_for('static', filename='files/' + item) }}" target="_blank">{{ item }}</a><br><br>
+                {% endfor %}
+            {% else %}
+                {% for message in get_flashed_messages()%}
+<!--                    <div>-->
+                        <p id="flash_msg">{{message}}</p>
+<!--                    </div>-->
+                {% endfor %}
+            {% endif %}
 
     </form>
 </body>

@@ -6,8 +6,8 @@ body {
     width: 150px;
     height: 150px;
 }
-input#seach_input {
-    width: 200px;
+input#search_input {
+    width: 250px;
     height: 30px;
     border: 2px solid #A9A9A9;
     border-radius: 15px;
@@ -20,4 +20,9 @@ input[type=submit] {
     border: none;
     border-radius: 4px;
     cursor: pointer;
+  }
+  #flash_msg {
+    display: block;
+    margin: 0 auto;
+    width: 510px;
   }
