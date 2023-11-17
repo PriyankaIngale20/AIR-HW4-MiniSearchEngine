@@ -128,6 +128,7 @@ class retrieve(object):
             line = f1.read(self.dict_recordSize).strip()
             if line == "":
                 print("Empty slot found. Key does not exist in collection. Hash Value:", hash_val)
+                flash("Empty slot found. Key does not exist in collection")
                 break
             elif line.startswith(key + " "):
                 print("Key found. Hash Value:", hash_val)
@@ -211,6 +212,7 @@ class retrieve(object):
     def retrive_postings(self, q_type, query_words, f1, f2, f3, f4):
         retrieved = []
         next_posts = []
+        postings_list = []
 
         for word in query_words:
             dict_entry = self.read_dictionary(f1, word)
@@ -238,13 +240,15 @@ class retrieve(object):
 
                 next_posts = postings_list
 
-        for posting in postings_list:
-            w, wt, *_ = posting[:2]
-            # print(f"{w= }")
-            x = self.readFileLine(int(w), self.map_recordSize, f3)
-            # print(f"one post from postings_list is {x}")
-            if x[0] not in retrieved:
-                retrieved.append(x[0])
+        if postings_list:
+            for posting in postings_list:
+                w, wt, *_ = posting[:2]
+                # print(f"{w= }")
+                x = self.readFileLine(int(w), self.map_recordSize, f3)
+                # print(f"one post from postings_list is {x}")
+                if x[0] not in retrieved:
+                    retrieved.append(x[0])
+
         return retrieved
 
     def read_data_from_files(self, q_type, query_words, directory_path):
